@@ -98,6 +98,69 @@ def upload_images(image_folder: Path) -> list[str]:
     return urls
 
 
+def upload_images_from_paths(image_paths: list[Path], max_count: int = 5) -> list[str]:
+    """指定パスの画像を最大 max_count 枚（順序そのまま）でアップロード／RAW URL 化。"""
+    ordered: list[Path] = []
+    for p in image_paths:
+        if len(ordered) >= max_count:
+            break
+        if not p.is_file():
+            print(f"  画像が見つかりません: {p}")
+            continue
+        if p.suffix.lower() not in _SUPPORTED_IMAGE_SUFFIXES:
+            print(f"  非対応形式（jpg/png のみ）: {p.name}")
+            continue
+        ordered.append(p)
+
+    if not ordered:
+        print("  有効な画像パスがありません")
+        return []
+
+    if IS_GITHUB_ACTIONS:
+        print("  [GitHub Actions] リポジトリ内の画像URLを使用します")
+        return github_raw_urls_for_paths(ordered)
+
+    urls = []
+    for img in ordered:
+        url = upload_image_to_github(img)
+        if url:
+            urls.append(url)
+    return urls
+
+
+def _publish_with_image_urls(
+    main_text: str, reply_text: str, image_urls: list[str], label: str
+) -> bool:
+    if not image_urls:
+        print("画像なしのため投稿スキップ")
+        return False
+
+    print("Threadsコンテナを作成中...")
+    if len(image_urls) == 1:
+        container_id = create_single_image_container(image_urls[0], main_text)
+    else:
+        container_id = create_carousel_post(image_urls, main_text)
+
+    if not container_id:
+        print("コンテナ作成失敗")
+        return False
+
+    print("30秒待機中...")
+    time.sleep(30)
+
+    post_id = publish_container(container_id)
+    if not post_id:
+        print("本投稿の公開失敗")
+        return False
+
+    print("ツリー返信を投稿中...")
+    time.sleep(5)
+    post_reply(post_id, reply_text)
+
+    print(f"[完了] {label}")
+    return True
+
+
 def create_carousel_container(image_urls: list[str]) -> list[str]:
     container_ids = []
     for url in image_urls:
@@ -204,37 +267,19 @@ def post_reply(reply_to_id: str, text: str) -> str | None:
 
 
 def post_product(main_text: str, reply_text: str, image_folder: Path) -> bool:
-    """メイン投稿（画像付き）＋ツリー返信。"""
+    """メイン投稿（フォルダ内から最大5枚ランダム）＋ツリー返信。"""
     print(f"\n[投稿開始] {image_folder.name}")
-
     print("画像をGitHubにアップロード中...")
     image_urls = upload_images(image_folder)
+    return _publish_with_image_urls(main_text, reply_text, image_urls, image_folder.name)
 
-    if not image_urls:
-        print("画像なしのため投稿スキップ")
-        return False
 
-    print("Threadsコンテナを作成中...")
-    if len(image_urls) == 1:
-        container_id = create_single_image_container(image_urls[0], main_text)
-    else:
-        container_id = create_carousel_post(image_urls, main_text)
-
-    if not container_id:
-        print("コンテナ作成失敗")
-        return False
-
-    print("30秒待機中...")
-    time.sleep(30)
-
-    post_id = publish_container(container_id)
-    if not post_id:
-        print("本投稿の公開失敗")
-        return False
-
-    print("ツリー返信を投稿中...")
-    time.sleep(5)
-    post_reply(post_id, reply_text)
-
-    print(f"[完了] {image_folder.name}")
-    return True
+def post_product_from_paths(
+    main_text: str, reply_text: str, image_paths: list[Path]
+) -> bool:
+    """メイン投稿（指定ファイルを順に最大5枚）＋ツリー返信。"""
+    label = ", ".join(p.name for p in image_paths[:5]) or "(no files)"
+    print(f"\n[投稿開始] {label}")
+    print("画像をGitHubにアップロード中...")
+    image_urls = upload_images_from_paths(image_paths)
+    return _publish_with_image_urls(main_text, reply_text, image_urls, label)

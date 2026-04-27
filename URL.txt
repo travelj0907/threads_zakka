@@ -1,0 +1,69 @@
+# URL.txt — 1エントリ = 商品URL + images/ 直下のフォルダ名（1〜20）
+#
+# ルール:
+#   ・1行目: 商品ページの URL
+#   ・2行目: フォルダ名のみ（images/<この名前>/ に jpg/png を入れる）
+#   ・空行で次のエントリ
+#   ・# で始まる行はコメント
+#
+# 下の dp はプレースホルダです。実際の商品 URL に差し替えてください。
+
+https://item.rakuten.co.jp/bunbougu-shibuya/s4220951/
+1
+
+https://www.rakuten.co.jp/kiyokyou/
+2
+
+https://item.rakuten.co.jp/tough-z/c/0000000670/
+3
+
+https://item.rakuten.co.jp/kiyokyou/c/0000000096/?l-id=shoptop_shopmenu_categorypage_4
+4
+
+https://item.rakuten.co.jp/crouka/toal-coffeemilkcd/
+5
+
+https://www.amazon.co.jp/dp/B0DCZJ2PHG/ref=sspa_dk_detail_3?pd_rd_i=B0DCZJ2PHG&pd_rd_w=ETzK4&content-id=amzn1.sym.f293be60-50b7-49bc-95e8-931faf86ed1e&pf_rd_p=f293be60-50b7-49bc-95e8-931faf86ed1e&pf_rd_r=9MTT8WXRAFA5JRYNF3FS&pd_rd_wg=JiGAe&pd_rd_r=da17d494-d482-4707-99fc-a2eb4ac1e84a&sp_csd=d2lkZ2V0TmFtZT1zcF9kZXRhaWw&th=1
+6
+
+https://www.rakuten.co.jp/kiyokyou/
+7
+
+https://www.amazon.co.jp/IwaiLoft-%E5%A4%8F%E3%81%AE%E9%A2%A8%E8%A9%A9%E7%89%A9-%E3%81%8F%E3%82%89%E3%81%92%E9%A2%A8%E9%88%B4-%E3%83%8F%E3%83%B3%E3%83%89%E3%83%A1%E3%82%A4%E3%83%89-%E3%82%AE%E3%83%95%E3%83%88%E3%81%AB%E3%82%82%E6%9C%80%E9%81%A9/dp/B0FHN8C9SW/ref=asc_df_B0FHN8C9SW?mcid=c9c72af130bb302d8b94b0ea2ddaa20f&tag=jpgo-22&linkCode=df0&hvadid=765652364391&hvpos=&hvnetw=g&hvrand=2374421714360915025&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9198588&hvtargid=pla-2440073522376&psc=1&hvocijid=2374421714360915025-B0FHN8C9SW-&hvexpln=0
+8
+
+https://www.amazon.co.jp/dp/B0D65XQWWV/ref=sspa_dk_detail_6?pf_rd_p=4519c587-1a66-4b67-a87f-559231103a05&pf_rd_r=NWRKGNNNXDXN4D9D002A&pd_rd_wg=47LNf&pd_rd_w=KTp7i&content-id=amzn1.sym.4519c587-1a66-4b67-a87f-559231103a05&pd_rd_r=9f3b749a-3aad-4437-8e44-2dc93ffaf93c&sp_csd=d2lkZ2V0TmFtZT1zcF9kZXRhaWwy&th=1
+9
+
+https://www.amazon.co.jp/dp/B0B8G4Q4K5/ref=sspa_dk_detail_0?psc=1&pd_rd_i=B0B8G4Q4K5&pd_rd_w=ISPPo&content-id=amzn1.sym.a710bf95-cf8c-4200-b800-fda98510a454&pf_rd_p=a710bf95-cf8c-4200-b800-fda98510a454&pf_rd_r=HWBWBJDW17RKA2WM55Y4&pd_rd_wg=nfmj6&pd_rd_r=154a205b-d902-457a-a4e7-d49a8c13ae8b&sp_csd=d2lkZ2V0TmFtZT1zcF9kZXRhaWxfdGhlbWF0aWM
+10
+
+https://www.amazon.co.jp/Dopamine-Arts-W2405-%E3%80%8C%E9%88%B4%E8%98%AD%E3%80%8D%E9%A2%A8%E9%88%B4%E3%80%81%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%A0%E8%89%B2%E3%81%AE%E8%82%8C%E3%80%81%E5%B0%8F%E3%81%95%E3%81%8F%E3%81%A6%E3%81%8B%E3%82%8F%E3%81%84%E3%81%84%E5%A4%96%E8%A6%8B%E3%80%81%E3%81%9D%E3%81%97%E3%81%A6%E6%BE%84%E3%82%93%E3%81%A0%E9%9F%B3%E8%89%B2/dp/B0D83XT2GP/ref=pd_bxgy_d_sccl_1/356-5252750-5152237?pd_rd_w=3xzLr&content-id=amzn1.sym.fb3df7da-4601-4c73-b94b-e275cd0eb364&pf_rd_p=fb3df7da-4601-4c73-b94b-e275cd0eb364&pf_rd_r=5FW6NGSWH6STM5ZHY0VY&pd_rd_wg=9BghG&pd_rd_r=f219e5fb-924b-45f1-99c2-e96fb41161ff&pd_rd_i=B0D83XT2GP&psc=1
+11
+
+https://www.amazon.co.jp/%E3%80%90TORCH%E3%80%91%E3%83%88%E3%83%BC%E3%83%81-coffee-holder-%E3%82%B3%E3%83%BC%E3%83%92%E3%83%BC%E8%B1%86-%E3%82%AD%E3%83%BC%E3%83%9B%E3%83%AB%E3%83%80%E3%83%BC/dp/B0D7PLB2LR/ref=asc_df_B0D7PLB2LR?mcid=5af9546dee2b33508123e56624849b2e&tag=jpgo-22&linkCode=df0&hvadid=713342760397&hvpos=&hvnetw=g&hvrand=4422247151802519352&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9198588&hvtargid=pla-2390676530844&psc=1&hvocijid=4422247151802519352-B0D7PLB2LR-&hvexpln=0
+12
+
+https://www.amazon.co.jp/dp/B0ZKKA0013
+13
+
+https://www.amazon.co.jp/dp/B0ZKKA0014
+14
+
+https://www.amazon.co.jp/dp/B0ZKKA0015
+15
+
+https://www.amazon.co.jp/dp/B0ZKKA0016
+16
+
+https://www.amazon.co.jp/dp/B0ZKKA0017
+17
+
+https://www.amazon.co.jp/dp/B0ZKKA0018
+18
+
+https://www.amazon.co.jp/dp/B0ZKKA0019
+19
+
+https://www.amazon.co.jp/dp/B0ZKKA0020
+20

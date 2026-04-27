@@ -29,6 +29,8 @@ jobs:
       - name: 投稿可能か確認
         run: python main.py --check
         env:
+          AMAZON_ASSOCIATE_TAG: ${{ secrets.AMAZON_ASSOCIATE_TAG }}
+          RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
           PYTHONUTF8: 1
 
       - name: Threadsへ自動投稿
@@ -40,12 +42,13 @@ jobs:
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
           GITHUB_REPO: ${{ github.repository }}
           AMAZON_ASSOCIATE_TAG: ${{ secrets.AMAZON_ASSOCIATE_TAG }}
+          RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
           PYTHONUTF8: 1
 
-      - name: products.csv を更新してコミット
+      - name: post_state.json を更新してコミット
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add products.csv
-          git diff --staged --quiet || git commit -m "Update products.csv [skip ci]"
+          git add post_state.json
+          git diff --staged --quiet || git commit -m "Update post_state.json [skip ci]"
           git push
