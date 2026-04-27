@@ -1,10 +1,15 @@
 """
 雑貨向け：本投稿＋ツリー返信（Amazon アフィリンク＋PR表記）
+文面の大半は post_copy.txt で編集可能。
 """
+
+from __future__ import annotations
 
 import os
 import random
+import re
 import sys
+from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from dotenv import load_dotenv
@@ -14,14 +19,84 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 AMAZON_ASSOCIATE_TAG = os.getenv("AMAZON_ASSOCIATE_TAG", "").strip()
 
-MAIN_OPENING_PREFIXES = [
+_COPY_PATH = Path(__file__).parent / "post_copy.txt"
+
+# post_copy.txt が無い／空のときのフォールバック（最低限）
+_FALLBACK_MAIN_OPENINGS = [
     "こっそりだけど、マジで良かったから載せとく。\n\n知らない人が多すぎてもったいない。\n\n",
-    "買って正解だったやつ。\n\nもう手放せない。\n\n",
-    "部屋の質感が一段上がった。\n\nインテリア好きには刺さるやつ。\n\n",
-    "ガチでリピ確定。\n\nこれない生活に戻れない。\n\n",
-    "言い過ぎ注意だけど…\n\nマジでコスパ良すぎた。\n\n",
-    "保存推奨。\n\n後で探せなくなるタイプ。\n\n",
 ]
+_FALLBACK_HOOKS = ["{category}、これ当てられる？"]
+_FALLBACK_MAIN_BODIES = [
+    """{hook}
+
+{feature1}、{feature2}。
+{feature3}。
+
+{category_line}商品名は、"""
+]
+_FALLBACK_REPLIES = [
+    """『{name}』です！
+
+Amazonはここからどうぞ↓
+{amazon_url}
+
+※Amazonアソシエイト（PR）"""
+]
+
+
+def _parse_copy_file(text: str) -> dict[str, list[str]]:
+    """[section] 見出しと --- 区切りでブロックを読む。"""
+    lines = []
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("#"):
+            continue
+        lines.append(line)
+
+    cleaned = "\n".join(lines)
+    parts = re.split(r"(?m)^\[([a-zA-Z0-9_]+)\]\s*$", cleaned)
+    out: dict[str, list[str]] = {}
+    if not parts:
+        return out
+    # parts[0] は先頭のゴミ（通常空）
+    for i in range(1, len(parts), 2):
+        if i + 1 >= len(parts):
+            break
+        section = parts[i].lower()
+        body = parts[i + 1].strip()
+        blocks = [b.strip() for b in re.split(r"(?m)^---\s*$", body) if b.strip()]
+        if blocks:
+            out[section] = blocks
+    return out
+
+
+def _load_copy_lists() -> tuple[list[str], list[str], list[str], list[str]]:
+    if not _COPY_PATH.exists():
+        return (
+            _FALLBACK_MAIN_OPENINGS,
+            _FALLBACK_HOOKS,
+            _FALLBACK_MAIN_BODIES,
+            _FALLBACK_REPLIES,
+        )
+    try:
+        raw = _COPY_PATH.read_text(encoding="utf-8-sig")
+    except OSError:
+        return (
+            _FALLBACK_MAIN_OPENINGS,
+            _FALLBACK_HOOKS,
+            _FALLBACK_MAIN_BODIES,
+            _FALLBACK_REPLIES,
+        )
+    data = _parse_copy_file(raw)
+
+    openings = data.get("main_openings") or _FALLBACK_MAIN_OPENINGS
+    hooks = data.get("hooks") or _FALLBACK_HOOKS
+    bodies = data.get("main_bodies") or _FALLBACK_MAIN_BODIES
+    replies = data.get("replies") or _FALLBACK_REPLIES
+    return openings, hooks, bodies, replies
+
+
+MAIN_OPENING_PREFIXES, HOOK_TEMPLATES, MAIN_TEMPLATES, REPLY_TEMPLATES = _load_copy_lists()
 
 
 def to_amazon_affiliate_url(product_url: str) -> str:
@@ -41,85 +116,6 @@ def to_amazon_affiliate_url(product_url: str) -> str:
         (parsed.scheme or "https", parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment)
     )
     return rebuilt
-
-
-MAIN_TEMPLATES = [
-    """{hook}
-
-{feature1}、{feature2}。
-{feature3}。
-
-{category_line}これ、名前当てたら強い。
-
-商品名は、""",
-
-    """{hook}
-
-{feature1}。
-{feature2}、{feature3}まで揃ってる。
-
-{category_line}友達にも教えたくなるやつ。
-
-答えは、""",
-
-    """ちょっと待って。{category}でこれ知らない人多くない？
-
-{feature1}。
-{feature2}、{feature3}。
-
-{category_line}買い逃し注意。
-
-商品名、""",
-
-    """{hook}
-
-毎日使うからこそ、こだわりたい人向け。
-
-{feature1}に{feature2}、
-{feature3}まである。
-
-{category_line}これ当てられたら通です。
-
-名前は、""",
-
-    """正直あんまり広めたくなかったんだけど。
-
-{feature1}、{feature2}。
-{feature3}まで体験できる。
-
-{category_line}リンクはツリーに置いとく。""",
-]
-
-HOOK_TEMPLATES = [
-    "{category}、これ当てられる？",
-    "{category}沼の人、これ見て。",
-    "これ買ってから{category}の基準変わった",
-    "{category}で最近いちばん満足した買い物",
-    "押し付けがましく言うけど、{category}好きなら見て",
-]
-
-REPLY_TEMPLATES = [
-    """『{name}』です！
-
-詳細・在庫はAmazonで確認してみて↓
-{amazon_url}
-
-※Amazonアソシエイト（PR）""",
-
-    """答え合わせ『{name}』
-
-気になる人はここからどうぞ↓
-{amazon_url}
-
-※Amazonアソシエイト（PR）""",
-
-    """『{name}』/{category}
-
-買うならリンクからどうぞ（同一商品の参考）
-{amazon_url}
-
-※Amazonアソシエイト（PR）""",
-]
 
 
 FALLBACK_FEATURES = [
@@ -144,6 +140,13 @@ def _trim_at_boundary(text: str, max_len: int) -> str:
     return text[:max_len] + "…"
 
 
+def _collapse_blank_lines(text: str) -> str:
+    """連続改行（空行）を1行の改行にまとめる。"""
+    text = text.strip()
+    text = re.sub(r"\n{2,}", "\n", text)
+    return text.strip()
+
+
 def generate_post(
     product_info: dict,
     sell_point: str,
@@ -154,6 +157,8 @@ def generate_post(
     product_info: name, amazon_url（生URLでOK。tagは to_amazon で付与）
     返り値: {"main_text": str, "reply_text": str}
     """
+    openings, hooks, bodies, replies = _load_copy_lists()
+
     features = [f.strip() for f in sell_point.split("・") if f.strip()]
     fallbacks = random.sample(FALLBACK_FEATURES, len(FALLBACK_FEATURES))
     fi = 0
@@ -161,8 +166,8 @@ def generate_post(
         features.append(fallbacks[fi % len(fallbacks)])
         fi += 1
 
-    hook = random.choice(HOOK_TEMPLATES).format(category=category)
-    template = random.choice(MAIN_TEMPLATES)
+    hook = random.choice(hooks).format(category=category)
+    template = random.choice(bodies)
 
     price_sentence = ""
     if price_band and "要" not in price_band:
@@ -190,19 +195,21 @@ def generate_post(
     if len(main_text) > 210:
         main_text = _trim_at_boundary(main_text, 207)
 
-    main_text = random.choice(MAIN_OPENING_PREFIXES) + main_text
+    opening = random.choice(openings).strip()
+    main_text = _collapse_blank_lines(opening + "\n" + main_text)
 
     amazon_url = to_amazon_affiliate_url(product_info.get("amazon_url", ""))
-    reply_template = random.choice(REPLY_TEMPLATES)
+    reply_template = random.choice(replies)
     reply_text = reply_template.format(
         name=product_info.get("name", ""),
         category=category,
         amazon_url=amazon_url,
     )
+    reply_text = _collapse_blank_lines(reply_text)
 
     return {
-        "main_text": main_text.strip(),
-        "reply_text": reply_text.strip(),
+        "main_text": main_text,
+        "reply_text": reply_text,
     }
 
 
