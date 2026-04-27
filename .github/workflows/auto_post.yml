@@ -1,0 +1,51 @@
+name: Threads 自動投稿（雑貨）
+
+on:
+  schedule:
+    - cron: "35 23 * * *"
+    - cron: "35 2 * * *"
+    - cron: "35 8 * * *"
+    - cron: "35 10 * * *"
+  workflow_dispatch:
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: ライブラリインストール
+        run: pip install -r requirements.txt
+
+      - name: 投稿可能か確認
+        run: python main.py --check
+        env:
+          PYTHONUTF8: 1
+
+      - name: Threadsへ自動投稿
+        run: |
+          echo "実行日時: $(date '+%Y-%m-%d %H:%M:%S UTC') (JST: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S'))"
+          python main.py --auto
+        env:
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+          AMAZON_ASSOCIATE_TAG: ${{ secrets.AMAZON_ASSOCIATE_TAG }}
+          PYTHONUTF8: 1
+
+      - name: products.csv を更新してコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add products.csv
+          git diff --staged --quiet || git commit -m "Update products.csv [skip ci]"
+          git push
