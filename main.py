@@ -1,20 +1,18 @@
 """
 URL.txt（URL + 画像フォルダ名）を読み、未投稿かつ画像ありの1件を Threads に投稿する。
-画像は images/<フォルダ名>/ 内の jpg/png を最大5枚ランダム選択。
+画像は images/<フォルダ名>/ 内の jpg/png/webp を最大5枚ランダム選択。
 投稿済みは post_state.json で管理。
+画像ありの URL が全員このサイクルで投稿されたら、URL.txt の全行を FALSE に戻し次のサイクルへ。
 """
 
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import random
 import re
 import sys
 from pathlib import Path
-
-ROTATION_INTERVAL = 20
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -31,7 +29,7 @@ URL_TXT = ROOT / "URL.txt"
 IMAGES_DIR = ROOT / "images"
 STATE_PATH = ROOT / "post_state.json"
 
-_IMG_SUFFIX = (".jpg", ".jpeg", ".png")
+_IMG_SUFFIX = (".jpg", ".jpeg", ".png", ".webp")
 
 
 def _strip_comment_lines(text: str) -> str:
@@ -96,36 +94,34 @@ def posted_flag(url: str, state: dict) -> str:
     return str(state["posted"].get(url, "FALSE"))
 
 
-def latest_post_serial(state: dict) -> int:
-    m = 0
-    for v in state["posted"].values():
-        s = str(v)
-        if s.upper() == "TRUE":
-            m = max(m, 1)
-        elif s.isdigit():
-            m = max(m, int(s))
-    return m
+def postable_entries(entries: list[dict]) -> list[dict]:
+    """画像が1枚以上あるエントリ（1サイクルで各1回ずつ投稿対象）。"""
+    return [e for e in entries if all_images_exist(e)]
 
 
-def revive_for_rotation(entries: list[dict], state: dict) -> bool:
-    pending = [e for e in entries if posted_flag(e["url"], state).upper() == "FALSE"]
-    if pending:
+def all_postable_were_posted(entries: list[dict], state: dict) -> bool:
+    """画像ありが1件以上あり、かつその全員がこのサイクルで投稿済み（FALSE でない）。"""
+    pe = postable_entries(entries)
+    if not pe:
         return False
+    return all(posted_flag(e["url"], state).upper() != "FALSE" for e in pe)
 
-    latest_serial = latest_post_serial(state)
-    revived = False
+
+def reset_cycle(entries: list[dict], state: dict) -> None:
+    """URL.txt の全 URL を未投稿（FALSE）に戻し、次のサイクルを開始する。"""
     for e in entries:
-        url = e["url"]
-        val = str(state["posted"].get(url, "0"))
-        posted_at = 0
-        if val.upper() == "TRUE":
-            posted_at = 1
-        elif val.isdigit():
-            posted_at = int(val)
-        if posted_at > 0 and (latest_serial - posted_at) >= ROTATION_INTERVAL:
-            state["posted"][url] = "FALSE"
-            revived = True
-    return revived
+        state["posted"][e["url"]] = "FALSE"
+
+
+def maybe_reset_completed_cycle(entries: list[dict], state: dict) -> bool:
+    """
+    画像ありが全員投稿済みなら全行 FALSE に戻す。
+    戻したら True（post_state を保存する必要あり）。
+    """
+    if not all_postable_were_posted(entries, state):
+        return False
+    reset_cycle(entries, state)
+    return True
 
 
 def _folder_image_candidates(entry: dict) -> list[Path]:
@@ -184,6 +180,8 @@ def run_check() -> int:
 
     state = load_state()
     merge_new_urls(entries, state)
+    maybe_reset_completed_cycle(entries, state)
+    save_state(state)
 
     print_affiliate_env_warnings(entries)
     pending, with_img, missing = build_candidates(entries, state)
@@ -195,7 +193,7 @@ def run_check() -> int:
         if st.upper() == "FALSE":
             ok = "投稿候補" if ok_img else "画像フォルダ不足"
         else:
-            ok = "—（投稿済/通算管理）"
+            ok = "—（このサイクルで投稿済）"
         print(f"  [{ok}] {url[:60]}{'...' if len(url) > 60 else ''}")
         print(f"         フォルダ: images/{e['folder']}/  投稿済み={st}")
     print()
@@ -203,21 +201,9 @@ def run_check() -> int:
         print(f"→ いま投稿できる件数: {len(with_img)}")
         return 0
     if pending and missing:
-        print("→ 未投稿がありますが、images/<フォルダ>/ に jpg/png がありません。")
+        print("→ 未投稿がありますが、images/<フォルダ>/ に jpg/png/webp がありません。")
         return 1
     if not pending:
-        preview = copy.deepcopy(state)
-        if revive_for_rotation(entries, preview):
-            p2, w2, m2 = build_candidates(entries, preview)
-            if w2:
-                print(
-                    f"→ 全件投稿済みですが、{ROTATION_INTERVAL} 投稿以上経過した URL は "
-                    f"--auto 時に FALSE に戻ります。復活後に投稿可能: {len(w2)}"
-                )
-                return 0
-            if p2 and m2:
-                print("→ ローテーション後も画像不足のみです。")
-                return 1
         print("→ 未投稿の FALSE がありません。")
         return 1
 
@@ -232,6 +218,7 @@ def main(auto_mode: bool = False):
 
     state = load_state()
     merge_new_urls(entries, state)
+    maybe_reset_completed_cycle(entries, state)
     save_state(state)
 
     pending, pending_with_images, pending_missing = build_candidates(entries, state)
@@ -244,19 +231,8 @@ def main(auto_mode: bool = False):
             if auto_mode:
                 sys.exit(1)
         else:
-            revive_for_rotation(entries, state)
-            save_state(state)
-            pending_with_images = [
-                e
-                for e in entries
-                if posted_flag(e["url"], state).upper() == "FALSE" and all_images_exist(e)
-            ]
-            if not pending_with_images:
-                print("投稿できるエントリがありません。URL.txt と images/ を確認してください。")
-                sys.exit(1 if auto_mode else 0)
-
-    if not pending_with_images:
-        sys.exit(1 if auto_mode else 0)
+            print("投稿できるエントリがありません。URL.txt と images/ を確認してください。")
+            sys.exit(1 if auto_mode else 0)
 
     target = random.choice(pending_with_images)
     url = target["url"]
@@ -291,10 +267,11 @@ def main(auto_mode: bool = False):
     )
 
     if success:
-        new_serial = latest_post_serial(state) + 1
-        state["posted"][url] = str(new_serial)
+        state["posted"][url] = "TRUE"
+        if maybe_reset_completed_cycle(entries, state):
+            print("\n画像ありの URL はこのサイクルで全件投稿済みのため、全行を FALSE に戻しました（次からまたランダム）。")
         save_state(state)
-        print(f"\n投稿済みを更新（通算{new_serial}投稿目）")
+        print("\n投稿済みを更新しました。")
     else:
         print("\n投稿に失敗しました。ログを確認してください。")
         sys.exit(1)

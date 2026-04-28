@@ -24,7 +24,7 @@ THREADS_BASE_URL = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}"
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/contents"
 REPO_ROOT = Path(__file__).parent
 
-_SUPPORTED_IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png")
+_SUPPORTED_IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp")
 
 
 def random_image_paths(image_folder: Path, max_count: int = 5) -> list[Path]:
@@ -108,7 +108,7 @@ def upload_images_from_paths(image_paths: list[Path], max_count: int = 5) -> lis
             print(f"  画像が見つかりません: {p}")
             continue
         if p.suffix.lower() not in _SUPPORTED_IMAGE_SUFFIXES:
-            print(f"  非対応形式（jpg/png のみ）: {p.name}")
+            print(f"  非対応形式（jpg/png/webp のみ）: {p.name}")
             continue
         ordered.append(p)
 
