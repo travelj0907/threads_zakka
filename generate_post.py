@@ -89,6 +89,22 @@ def canonical_rakuten_product_url(product_url: str) -> str:
     return urlunparse((scheme, host, path, "", "", ""))
 
 
+def canonical_product_url(product_url: str) -> str:
+    """
+    Amazon → ASIN の最短 URL、楽天 → クエリ除去、hb.afl はそのまま、その他はトリムのみ。
+    URL.txt の整形や投稿直前の正規化に使う。
+    """
+    if not (product_url or "").strip():
+        return ""
+    raw = product_url.strip()
+    kind = detect_affiliate_program(raw)
+    if kind == "amazon":
+        return canonical_amazon_url(raw)
+    if kind == "rakuten":
+        return canonical_rakuten_product_url(raw)
+    return raw
+
+
 def detect_affiliate_program(product_url: str) -> str:
     """商品 URL の種別: amazon / rakuten / other"""
     if not (product_url or "").strip():
