@@ -1,11 +1,8 @@
 name: Threads 自動投稿（雑貨）
 
+# 投稿タイミングは Google Apps Script から workflow_dispatch（GAS 側でスケジュール）
+# ここでは cron を使わない（UTC と二重投稿を避ける）
 on:
-  schedule:
-    - cron: "35 23 * * *"
-    - cron: "35 2 * * *"
-    - cron: "35 8 * * *"
-    - cron: "35 10 * * *"
   workflow_dispatch:
 
 jobs:
