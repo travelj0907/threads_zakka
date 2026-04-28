@@ -1,6 +1,7 @@
 """
 雑貨向け：本投稿は sample.txt からランダム、ツリーは商品 URL ＋ PR。
 Amazon → tag 付与、楽天市場等 → hb.afl ラップ（.env の ID 使用）。
+楽天はクエリ・フラグメント（広告・計測用など）を除いてからラップする。
 """
 
 from __future__ import annotations
@@ -64,6 +65,30 @@ def canonical_amazon_url(product_url: str) -> str:
     return urlunparse((scheme, host, f"/dp/{asin}", "", "", ""))
 
 
+def canonical_rakuten_product_url(product_url: str) -> str:
+    """
+    楽天ドメインの URL からクエリ・フラグメントを除いた最短形に揃える。
+    （scid, gclid, icm_* など計測・広告パラメータを落としてから hb.afl に載せる）
+    hb.afl は第三者のアフィ形式なのでそのまま返す。
+    """
+    if not (product_url or "").strip():
+        return ""
+    raw = product_url.strip()
+    parsed = urlparse(raw)
+    host = (parsed.netloc or "").lower()
+    if not host:
+        return raw
+    if host == "hb.afl.rakuten.co.jp" or host.endswith(".afl.rakuten.co.jp"):
+        return raw
+    if "rakuten.co.jp" not in host:
+        return raw
+    scheme = (parsed.scheme or "https").lower()
+    if scheme not in ("http", "https"):
+        scheme = "https"
+    path = parsed.path or ""
+    return urlunparse((scheme, host, path, "", "", ""))
+
+
 def detect_affiliate_program(product_url: str) -> str:
     """商品 URL の種別: amazon / rakuten / other"""
     if not (product_url or "").strip():
@@ -104,7 +129,9 @@ def to_rakuten_affiliate_url(product_url: str) -> str:
     """
     if not product_url:
         return ""
-    raw = product_url.strip()
+    raw = canonical_rakuten_product_url(product_url)
+    if not raw:
+        return ""
     parsed = urlparse(raw)
     host = (parsed.netloc or "").lower()
     if host == "hb.afl.rakuten.co.jp" or host.endswith(".afl.rakuten.co.jp"):
